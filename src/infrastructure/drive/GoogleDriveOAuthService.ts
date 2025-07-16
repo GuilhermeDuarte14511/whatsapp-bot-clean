@@ -7,18 +7,29 @@ import { IDriveService } from '../../domain/services/IGoogleDriveService';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const TOKEN_PATH = path.resolve('tokens/token.json');
-const CREDENTIALS_PATH = path.resolve('client_secret.json'); // renomeie para esse nome no projeto
 
 /**
- * Autoriza via OAuth com client_secret e salva token em disco (apenas em dev).
+ * Autoriza via OAuth com variável de ambiente GOOGLE_INSTALLED_JSON.
  */
 async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
-  const content = fs.readFileSync(CREDENTIALS_PATH, 'utf8');
-  const credentials = JSON.parse(content).installed;
-  const { client_id, client_secret, redirect_uris } = credentials;
+  const credentialsEnv = process.env.GOOGLE_INSTALLED_JSON;
 
+  if (!credentialsEnv) {
+    throw new Error('❌ Variável de ambiente GOOGLE_INSTALLED_JSON não definida.');
+  }
+
+  let credentials;
+  try {
+    const parsed = JSON.parse(credentialsEnv);
+    credentials = parsed.installed;
+  } catch (err) {
+    throw new Error('❌ Erro ao fazer parse do GOOGLE_INSTALLED_JSON: ' + err);
+  }
+
+  const { client_id, client_secret, redirect_uris } = credentials;
   const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
+  // Em produção, o token não será salvo em disco
   if (fs.existsSync(TOKEN_PATH)) {
     const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
     oAuth2Client.setCredentials(token);
@@ -32,11 +43,7 @@ async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
 
   console.log('\n🔗 Autorize o app nesta URL:\n', authUrl);
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const code: string = await new Promise(resolve => {
     rl.question('\n🔐 Cole o código aqui: ', input => {
       rl.close();
@@ -46,14 +53,16 @@ async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
 
   const { tokens } = await oAuth2Client.getToken(code);
   oAuth2Client.setCredentials(tokens);
+
   fs.mkdirSync(path.dirname(TOKEN_PATH), { recursive: true });
   fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
+
   console.log('✅ Token salvo em:', TOKEN_PATH);
   return oAuth2Client;
 }
 
 /**
- * Serviço Google Drive usando OAuth2 com client_secret.
+ * Serviço Google Drive usando OAuth2 com variável de ambiente.
  */
 export class GoogleDriveOAuthService implements IDriveService {
   private drive: drive_v3.Drive;
@@ -93,7 +102,7 @@ export class GoogleDriveOAuthService implements IDriveService {
     const res = await this.drive.files.list({ q, fields: 'files(id)' });
 
     if (res.data.files?.length) return res.data.files[0].id!;
-    
+
     const folder = await this.drive.files.create({
       requestBody: {
         name,

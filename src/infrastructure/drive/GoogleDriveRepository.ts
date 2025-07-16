@@ -8,11 +8,24 @@ import { IDriveService } from '../../domain/services/IGoogleDriveService';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const TOKEN_PATH = path.resolve('tokens/token.json');
-const CREDENTIALS_PATH = path.resolve('tokens/client_secret_394353011841-85om534p3do7280ganbp6436noji0ghb.apps.googleusercontent.com.json');
 
+/**
+ * Autoriza via OAuth com base na variável de ambiente GOOGLE_INSTALLED_JSON.
+ */
 async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
-  const content = fs.readFileSync(CREDENTIALS_PATH, 'utf8');
-  const credentials = JSON.parse(content).installed;
+  const credentialsEnv = process.env.GOOGLE_INSTALLED_JSON;
+
+  if (!credentialsEnv) {
+    throw new Error('❌ Variável de ambiente GOOGLE_INSTALLED_JSON não definida.');
+  }
+
+  let credentials;
+  try {
+    const parsed = JSON.parse(credentialsEnv);
+    credentials = parsed.installed;
+  } catch (err) {
+    throw new Error('❌ Erro ao fazer parse do GOOGLE_INSTALLED_JSON: ' + err);
+  }
 
   const { client_secret, client_id, redirect_uris } = credentials;
   const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
@@ -50,6 +63,9 @@ async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
   return oAuth2Client;
 }
 
+/**
+ * Implementação do serviço do Google Drive com OAuth2.
+ */
 export class GoogleDriveColaboradorRepository implements IDriveService {
   private drive: drive_v3.Drive;
   private sharedFolderId: string;
@@ -66,11 +82,15 @@ export class GoogleDriveColaboradorRepository implements IDriveService {
   }
 
   private detectMimeType(fileName: string): string {
-    if (fileName.endsWith('.pdf')) return 'application/pdf';
-    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
-    if (fileName.endsWith('.png')) return 'image/png';
-    if (fileName.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    return 'application/octet-stream';
+    const ext = path.extname(fileName).toLowerCase();
+    const types: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    };
+    return types[ext] || 'application/octet-stream';
   }
 
   async uploadArquivoParaSubpasta(
@@ -119,7 +139,7 @@ export class GoogleDriveColaboradorRepository implements IDriveService {
     }
   }
 
-  public async getOrCreateFolder(folderName: string, parentId: string): Promise<string> {
+  async getOrCreateFolder(folderName: string, parentId: string): Promise<string> {
     const q = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`;
 
     const existing = await this.drive.files.list({
@@ -143,7 +163,7 @@ export class GoogleDriveColaboradorRepository implements IDriveService {
     return folder.data.id!;
   }
 
-  public async getPublicLink(fileId: string): Promise<string> {
+  async getPublicLink(fileId: string): Promise<string> {
     try {
       await this.drive.permissions.create({
         fileId,
