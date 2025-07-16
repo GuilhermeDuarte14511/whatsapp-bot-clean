@@ -6,13 +6,13 @@ import os from 'os';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
-import { iniciarBot } from 'interfaces/WhatsAppListener';
-import { wppRouter } from 'api/WppController'; 
+import { iniciarBot } from './interfaces/WhatsAppListener';
+import { wppRouter } from './api/WppController';
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
-// CORS liberado (pode restringir por origem se quiser)
+// CORS liberado
 app.use(cors());
 
 // Swagger
@@ -26,11 +26,11 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`, // Você pode substituir por IP dinâmico se necessário
+        url: `http://localhost:${PORT}`,
       },
     ],
   },
-  apis: ['./src/api/*.ts'], // Esse caminho só é usado no build do Swagger, não precisa mudar
+  apis: ['./src/api/*.ts'], // válido para desenvolvimento local
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -39,7 +39,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Rotas do bot
 app.use('/api/wpp', wppRouter);
 
-// Rota para descobrir IP local da API (útil para frontend local)
+// Rota utilitária para descobrir o IP local da máquina
 app.get('/api/url', (req, res) => {
   const interfaces = os.networkInterfaces();
   let localIP = 'localhost';
@@ -56,11 +56,11 @@ app.get('/api/url', (req, res) => {
   res.json({ url });
 });
 
-// Mostrar rotas no terminal
+// Exibe as rotas no terminal
 function listarRotas() {
   if (!app._router) return;
 
-  console.log('Rotas registradas no servidor:');
+  console.log('📌 Rotas registradas no servidor:');
   app._router.stack.forEach((middleware: any) => {
     if (middleware.route) {
       const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
@@ -96,5 +96,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em: http://${localIP}:${PORT}`);
   listarRotas();
 
-  iniciarBot(); // ✅ Inicia o bot ao subir servidor
+  iniciarBot(); // Inicializa o bot de WhatsApp
 });
