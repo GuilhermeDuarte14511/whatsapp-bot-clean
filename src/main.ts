@@ -8,7 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 import { iniciarBot } from '../src/interfaces/WhatsAppListener';
-import { wppRouter } from '../../whatsapp-bot-clean/src/api/WppController'; // ajuste o caminho correto
+import { wppRouter } from './src/api/WppController';
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;

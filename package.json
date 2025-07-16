@@ -13,8 +13,10 @@
   "description": "",
   "dependencies": {
     "@wppconnect-team/wppconnect": "^1.37.3",
+    "compressorjs": "^1.2.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
+    "eventemitter2": "^6.4.9",
     "express": "^5.1.0",
     "googleapis": "^153.0.0",
     "open": "^10.2.0",
