@@ -80,7 +80,7 @@ class GoogleDriveOAuthService {
     }
     getOrCreateFolder(folderName, parentId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const q = '${parentId}' in parents, and, mimeType = 'application/vnd.google-apps.folder', and, name = '${folderName}', and, trashed = false;
+            const q = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`;
             const existing = yield this.drive.files.list({
                 q,
                 fields: 'files(id, name)',
@@ -156,11 +156,12 @@ class GoogleDriveOAuthService {
             try {
                 const pastaCpf = yield this.getOrCreateFolder(cpf, this.sharedFolderId);
                 const pastaSub = yield this.getOrCreateFolder(subpasta, pastaCpf);
+                const q = `'${pastaSub}' in parents and trashed = false`;
                 const res = yield this.drive.files.list({
-                    q: '${pastaSub}' in parents, and, trashed = false,
+                    q,
                     fields: 'files(name, webViewLink)',
                 });
-                return (_b = (_a = res.data.files) === null || _a === void 0 ? void 0 : _a.map(file => $, { file, : .name } - $, { file, : .webViewLink })) !== null && _b !== void 0 ? _b : [];
+                return (_b = (_a = res.data.files) === null || _a === void 0 ? void 0 : _a.map(file => `${file.name} - ${file.webViewLink}`)) !== null && _b !== void 0 ? _b : [];
             }
             catch (err) {
                 console.error('❌ Erro ao listar arquivos:', err);
