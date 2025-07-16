@@ -5,19 +5,24 @@ import { google, Auth } from 'googleapis';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const TOKEN_PATH = path.resolve('tokens/token.json');
-const CREDENTIALS_PATH = path.resolve('google-credentials-drive.json');
 
 export async function authorizeOAuth(): Promise<Auth.OAuth2Client> {
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    throw new Error(`Arquivo de credenciais não encontrado: ${CREDENTIALS_PATH}`);
+  const credentialsEnv = process.env.GOOGLE_INSTALLED_JSON;
+
+  if (!credentialsEnv) {
+    throw new Error('❌ Variável de ambiente GOOGLE_INSTALLED_JSON não definida.');
   }
 
-  const file = fs.readFileSync(CREDENTIALS_PATH, 'utf8');
-  const json = JSON.parse(file);
-  const credentials = json.installed;
+  let credentials;
+  try {
+    const parsed = JSON.parse(credentialsEnv);
+    credentials = parsed.installed;
+  } catch (err) {
+    throw new Error('❌ Erro ao fazer parse do GOOGLE_INSTALLED_JSON: ' + err);
+  }
 
   if (!credentials) {
-    throw new Error('Campo "installed" não encontrado no JSON de credenciais.');
+    throw new Error('❌ Campo "installed" não encontrado no JSON da variável GOOGLE_INSTALLED_JSON.');
   }
 
   const { client_secret, client_id, redirect_uris } = credentials;
