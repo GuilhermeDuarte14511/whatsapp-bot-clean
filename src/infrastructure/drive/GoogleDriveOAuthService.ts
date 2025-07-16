@@ -75,7 +75,7 @@ export class GoogleDriveOAuthService implements IDriveService {
   }
 
   public async getOrCreateFolder(folderName: string, parentId: string): Promise<string> {
-    const q = '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false;
+    const q = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`;
 
     const existing = await this.drive.files.list({
       q,
@@ -128,39 +128,41 @@ export class GoogleDriveOAuthService implements IDriveService {
     }
   }
 
-        public async getPublicLink(fileId: string): Promise<string> {
-        try {
-            await this.drive.permissions.create({
-            fileId,
-            requestBody: {
-                type: 'anyone',
-                role: 'reader',
-            },
-            });
+  public async getPublicLink(fileId: string): Promise<string> {
+    try {
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: {
+          type: 'anyone',
+          role: 'reader',
+        },
+      });
 
-            const result = await this.drive.files.get({
-            fileId,
-            fields: 'webViewLink',
-            });
+      const result = await this.drive.files.get({
+        fileId,
+        fields: 'webViewLink',
+      });
 
-            return result.data.webViewLink ?? '';
-        } catch (error) {
-            console.error('❌ Erro ao gerar link público:', error);
-            return '';
-        }
+      return result.data.webViewLink ?? '';
+    } catch (error) {
+      console.error('❌ Erro ao gerar link público:', error);
+      return '';
     }
+  }
 
   async listarArquivosEmSubpasta(cpf: string, subpasta: string): Promise<string[]> {
     try {
       const pastaCpf = await this.getOrCreateFolder(cpf, this.sharedFolderId);
       const pastaSub = await this.getOrCreateFolder(subpasta, pastaCpf);
 
+      const q = `'${pastaSub}' in parents and trashed = false`;
+
       const res = await this.drive.files.list({
-        q: '${pastaSub}' in parents and trashed = false,
+        q,
         fields: 'files(name, webViewLink)',
       });
 
-      return res.data.files?.map(file => ${file.name} - ${file.webViewLink}) ?? [];
+      return res.data.files?.map(file => `${file.name} - ${file.webViewLink}`) ?? [];
     } catch (err) {
       console.error('❌ Erro ao listar arquivos:', err);
       return [];
@@ -173,4 +175,5 @@ export class GoogleDriveOAuthService implements IDriveService {
     return new GoogleDriveOAuthService(drive);
   }
 }
+
 export { GoogleDriveOAuthService as GoogleDriveColaboradorRepository };
