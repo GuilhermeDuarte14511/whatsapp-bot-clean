@@ -1,21 +1,34 @@
-import { google } from 'googleapis';
+import { google, sheets_v4, drive_v3 } from 'googleapis';
 import { Colaborador } from '../../domain/entities/Colaborador';
 import { IColaboradorRepository } from '../../domain/repositories/IColaboradorRepository';
 
-export class GoogleSheetsColaboradorRepository implements IColaboradorRepository {
-  private auth = new google.auth.GoogleAuth({
-    keyFile: 'google-credentials.json',
+/**
+ * Autenticação via chave de serviço fornecida pela variável de ambiente GOOGLE_SERVICE_ACCOUNT_JSON
+ */
+const getAuthClient = () => {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error('❌ GOOGLE_SERVICE_ACCOUNT_JSON não definida.');
+
+  const credentials = JSON.parse(raw);
+
+  return new google.auth.JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/drive',
     ],
   });
+};
 
-  private async getSheetsClient() {
+export class GoogleSheetsColaboradorRepository implements IColaboradorRepository {
+  private auth = getAuthClient();
+
+  private async getSheetsClient(): Promise<sheets_v4.Sheets> {
     return google.sheets({ version: 'v4', auth: this.auth });
   }
 
-  private async getDriveClient() {
+  private async getDriveClient(): Promise<drive_v3.Drive> {
     return google.drive({ version: 'v3', auth: this.auth });
   }
 
@@ -152,12 +165,12 @@ export class GoogleSheetsColaboradorRepository implements IColaboradorRepository
     const subpastas = ['holerites', 'atestados', 'recibos'];
     const links: Record<string, string> = {};
 
-    const cpfFolderSearch = await drive.files.list({
-      q: `'${parentFolderId}' in parents and name = '${cpf}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-      fields: 'files(id)',
-    });
-
-    let cpfFolderId = cpfFolderSearch.data.files?.[0]?.id;
+    let cpfFolderId = (
+      await drive.files.list({
+        q: `'${parentFolderId}' in parents and name = '${cpf}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        fields: 'files(id)',
+      })
+    ).data.files?.[0]?.id;
 
     if (!cpfFolderId) {
       const res = await drive.files.create({
@@ -172,12 +185,12 @@ export class GoogleSheetsColaboradorRepository implements IColaboradorRepository
     }
 
     for (const subpasta of subpastas) {
-      const existing = await drive.files.list({
-        q: `'${cpfFolderId}' in parents and name = '${subpasta}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-        fields: 'files(id)',
-      });
-
-      let folderId = existing.data.files?.[0]?.id;
+      let folderId = (
+        await drive.files.list({
+          q: `'${cpfFolderId}' in parents and name = '${subpasta}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id)',
+        })
+      ).data.files?.[0]?.id;
 
       if (!folderId) {
         const res = await drive.files.create({
