@@ -1,5 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
@@ -7,16 +6,17 @@ import os from 'os';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
-import { iniciarBot } from '../src/interfaces/WhatsAppListener';
-import { wppRouter } from '../src/api/WppController';
+// ✅ Corrigido: importação relativa correta
+import { iniciarBot } from './interfaces/WhatsAppListener';
+import { wppRouter } from './api/WppController';
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
-// Habilitar CORS para todas as origens (ajuste se quiser restringir)
+// CORS liberado (pode restringir por origem se quiser)
 app.use(cors());
 
-// Configuração Swagger
+// Swagger
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -27,22 +27,20 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`, // Ou ajuste para IP da máquina
+        url: `http://localhost:${PORT}`, // Você pode substituir por IP dinâmico se necessário
       },
     ],
   },
-  apis: ['./src/api/*.ts'], // Ajuste o caminho para seus arquivos com comentários Swagger
+  apis: ['./src/api/*.ts'], // Esse caminho só é usado no build do Swagger, não precisa mudar
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Middleware para Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Registrar rotas do WhatsApp
+// Rotas do bot
 app.use('/api/wpp', wppRouter);
 
-// Endpoint para a URL da API (que retorna a URL dinâmica)
+// Rota para descobrir IP local da API (útil para frontend local)
 app.get('/api/url', (req, res) => {
   const interfaces = os.networkInterfaces();
   let localIP = 'localhost';
@@ -59,21 +57,16 @@ app.get('/api/url', (req, res) => {
   res.json({ url });
 });
 
-// Função para listar rotas com segurança
+// Mostrar rotas no terminal
 function listarRotas() {
-  if (!app._router) {
-    console.log('Nenhuma rota registrada (app._router é undefined).');
-    return;
-  }
+  if (!app._router) return;
 
   console.log('Rotas registradas no servidor:');
   app._router.stack.forEach((middleware: any) => {
     if (middleware.route) {
-      // rota direta
       const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
       console.log(`${methods} ${middleware.route.path}`);
     } else if (middleware.name === 'router') {
-      // router montado
       middleware.handle.stack.forEach((handler: any) => {
         const route = handler.route;
         if (route) {
@@ -100,9 +93,9 @@ app.listen(PORT, () => {
       }
     }
   }
-  console.log(`🚀 Servidor rodando em: http://${localIP}:${PORT}`);
 
+  console.log(`🚀 Servidor rodando em: http://${localIP}:${PORT}`);
   listarRotas();
 
-  iniciarBot();
+  iniciarBot(); // ✅ Inicia o bot ao subir servidor
 });
