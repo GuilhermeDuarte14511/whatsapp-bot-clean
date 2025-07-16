@@ -1,16 +1,17 @@
 {
   "name": "whatsapp-bot-clean",
   "version": "1.0.0",
+  "description": "Bot de WhatsApp integrado com Google Drive e Sheets",
   "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main.js",
-    "build": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc",
-    "dev": "ts-node-dev --respawn --transpile-only src/main.ts"
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "prepare": "npm run build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@wppconnect-team/wppconnect": "^1.37.3",
     "compressorjs": "^1.2.1",
