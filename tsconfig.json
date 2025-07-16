@@ -4,6 +4,15 @@
     "module": "CommonJS",
     "outDir": "dist",
     "rootDir": "src",
+    "baseUrl": "./src",
+    "paths": {
+      "infrastructure/*": ["infrastructure/*"],
+      "interfaces/*": ["interfaces/*"],
+      "application/*": ["application/*"],
+      "domain/*": ["domain/*"],
+      "config/*": ["config/*"],
+      "api/*": ["api/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

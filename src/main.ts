@@ -6,9 +6,8 @@ import os from 'os';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
-// ✅ Corrigido: importação relativa correta
-import { iniciarBot } from './interfaces/WhatsAppListener';
-import { wppRouter } from './api/WppController';
+import { iniciarBot } from 'interfaces/WhatsAppListener';
+import { wppRouter } from 'api/WppController'; 
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;

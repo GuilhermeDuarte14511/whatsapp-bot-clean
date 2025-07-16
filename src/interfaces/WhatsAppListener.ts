@@ -1,9 +1,9 @@
 import dotenv from 'dotenv';
-import { iniciarWpp } from '../../src/infrastructure/whatsapp/WppClient';
+import { iniciarWpp } from '../infrastructure/whatsapp/WppClient';
 import { Whatsapp, Message } from '@wppconnect-team/wppconnect';
-import { GoogleSheetsColaboradorRepository } from '../../src/infrastructure/sheets/GoogleSheetsColaboradorRepository';
-import { ConsultarDadosColaboradorUseCase } from '../../src/application/usecases/ConsultarDadosColaboradorUseCase';
-import { GoogleDriveService } from '../../src/infrastructure/drive/GoogleDriveService';
+import { GoogleSheetsColaboradorRepository } from '../infrastructure/sheets/GoogleSheetsColaboradorRepository';
+import { ConsultarDadosColaboradorUseCase } from '../application/usecases/ConsultarDadosColaboradorUseCase';
+import { GoogleDriveService } from '../infrastructure/drive/GoogleDriveService';
 
 dotenv.config();
 
